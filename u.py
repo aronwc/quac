@@ -22,6 +22,7 @@ import cPickle as pickle
 import pytz
 import random
 import re
+import subprocess
 import sys
 import time
 
@@ -408,17 +409,31 @@ def memory_use(peak=False):
       >>> peak = memory_use(peak=True)
       >>> big > small
       True
-      >>> big == peak
+      >>> big == peak # doctest: +SKIP
       True'''
    # Based on http://stackoverflow.com/a/898406/396038
-   ss = open('/proc/self/status').read()
-   field = 'VmPeak' if peak else 'VmSize'
-   m = re.search(r'^%s:\s+(\d+) kB' % field, ss, re.MULTILINE)
-   if (m):
+   status = '/proc/self/status'
+   if os.path.exists(status):
+      ss = open('/proc/self/status').read()
+      field = 'VmPeak' if peak else 'VmSize'
+      m = re.search(r'^%s:\s+(\d+) kB' % field, ss, re.MULTILINE)
       return int(m.group(1)) * 1024
    else:
-      l.warn('memory usage unsupported on this architecture')
-      return 1
+      return memory_use_mac(peak)
+
+# FIXME: How do you get VmPeak on Mac??
+def memory_use_mac(peak=False):
+   try:
+      if peak:
+         raise Exception('peak usage unsupported')
+      else:
+         pid = os.getpid()
+         vsz = subprocess.check_output(["ps", "-p", str(pid), "-o", "vsz"])
+         m = re.search(r'^.*\s+(\d+)$', str(vsz), re.MULTILINE)
+         return int(m.group(1)) * 1024
+   except Exception,e:
+       l.warn(e)
+       return 1
 
 def memory_use_log():
    l.debug('virtual memory used: %s now, %s peak'
