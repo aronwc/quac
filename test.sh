@@ -17,43 +17,37 @@
 #
 #   * If you pass the filename of a module, it will be tested.
 #
-#   * Otherwise, this script will find all candidate modules and test them.
+#   * Otherwise, this script will find all candidate modules under lib/, all
+#     scripts under bin/ and test them. Modules can declare that they should
+#     not be included in these automatic tests but remain testable manually;
+#     if you pass -a, then these are included anyway.
 #
 #   * If you pass -i as the first argument, then the function
 #     test_interactive() will be called instead of the non-interactive test
 #     harness. This is good for drawing pictures and whatnot that need human
 #     interpretation to determine correctness.
 #
-#   * The script does not test modules that have import problems:
-#
-#     * If -l (lenient mode) is specified, any modules that have imports which
-#       fail are skipped.
-#
-#     * Otherwise, only imports explicitly marked with
-#       "testable.SKIP_IF_NOT_FOUND" (in a comment) are skipped.
-#
-#     * There is no skipping for interactive tests.
+#   * If a script has import problems, a complaint about that will be printed
+#     instead of running the tests (which obviously can't be done).
 #
 # BUGS:
 #
 #   * Fails on filenames with spaces or other funny characters.
-#
-#   * Does not say which modules couldn't be imported.
 
 set -e
 #set -x
 
-import_skip='testable.SKIP_IF_NOT_FOUND'
+BASEDIR=$(cd $(dirname $0); pwd)
 
-while getopts "il" opt; do
+while getopts "ai" opt; do
     case $opt in
-        i)
-            echo '+ interactive mode'
-            interactive=1
+        a)
+            echo '* test everything (override manual-only)'
+            test_all=1
             ;;
-        l)
-            echo '+ lenient mode'
-            import_skip='^(import|from [^.])'
+        i)
+            echo '* interactive mode'
+            interactive=1
             ;;
         \?)
             exit 1
@@ -62,32 +56,114 @@ while getopts "il" opt; do
 done
 shift $((OPTIND-1))
 
-modules=$*
-if [ "$modules" == "" ]; then
-    modules=`find . -name '*.py' -exec grep -l 'testable.register' {} \;`
+to_test=$*
+
+# Choose the right sed option for extended regexes, in a lame way.
+case $(uname) in
+    Linux)
+        sed='sed -r'
+        ;;
+    Darwin)
+        sed='sed -E'
+        ;;
+    *)
+        echo "don't know how to sed on your platform" >&2
+        exit 1
+        ;;
+esac
+
+
+## Functions ##
+
+# Test whether the imports in script or module $1 can work. This is done by
+# extracting all the imports into a test .py file in the same directory as $1,
+# and then running that file. Only the first import failure is reported.
+import_test () {
+    local traw=$(dirname $1)/IMPORTTEST.py
+    # strip indents and doctest stuff on import lines
+    egrep '^[ >]*(import|from)' $1 | $sed 's/^[ >]*//' > $traw
+    python -m $(file_to_module $traw) 2> >(tail -n1)
+    local retval=$?
+    if [ $retval -eq 0 ]; then
+        # success; need newline (on failure, Python error message has one)
+        echo
+    fi
+    rm $traw
+    return $retval
+}
+
+# Transform filename to Python module name: strip leading ./, if any, and
+# trailing .py, and change slashes to dots.
+file_to_module () {
+    echo $1 | $sed 's/^(\.\/)?(.*)\.py$/\2/g' | $sed 's/\//./g'
+}
+
+        # # Python will give an ImportError message in case of import skips
+        # # FIXME: This doesn't test "from . import foo" correctly.
+        # if ( egrep "$import_skip" $mraw | python $testimports 2> >(tail -n1) ); then
+        #     echo
+        #     python -m $m
+        # fi
+
+
+## Test scripts ##
+
+cd $BASEDIR/bin
+
+# Can't specify scripts to test.sh (use --unittest), so do nothing if anything
+# is specified.
+if [ "$to_test" == "" ]; then
+    for script in $(find . -xtype f); do
+        # is it really a Python script? hacky test...
+        if ( head -n1 $script | fgrep -q python ); then
+
+            echo -n "+ $script ... "
+
+            if ( ! fgrep -q quacpath $script ); then
+                echo 'Does not import quacpath'
+                continue
+            fi
+
+            if ( import_test $script ); then
+                if ( fgrep -q -- --unittest $script ); then
+                    $script --unittest
+                fi
+            fi
+        fi
+    done
+fi
+
+
+## Test modules ##
+
+cd $BASEDIR/lib
+
+if [ "$to_test" == "" ]; then
+    if [ $test_all ]; then
+        grepstr='testable\.(manualonly_)?register'
+    else
+        grepstr='testable\.register'
+    fi
+    modules=$(find . -name '*.py' -exec egrep -l $grepstr {} \;)
+else
+    modules=$to_test
 fi
 
 # Remove all .pyc files: otherwise, importing modules that were removed or
 # renamed will still work!
 find . -name '*.pyc' -exec rm {} \;
 
-# On MacOS, sed's -r option is -E
-sedopt='-r'
-if [ `uname` == "Darwin" ]; then
-    sedopt='-E'
-fi
-
 for mraw in $modules; do
-    m=`echo $mraw |  sed $sedopt 's/^(\.\/)?(.*)\.py$/\2/g' | sed $sedopt 's/\//./g'`
-    echo -n "+ $m... "
+    # Strip leading lib/, if present (so you can use tab completion with
+    # test.sh at top level).
+    mraw=$(echo $mraw | $sed 's/lib\///' )
+    m=$(file_to_module $mraw)
+    echo -n "+ $m ... "
     if [ $interactive ]; then
         echo
         python -c "import $m ; $m.test_interactive()"
     else
-        # Python will give an ImportError message in case of import skips
-        # FIXME: This doesn't test "from . import foo" correctly.
-        if ( egrep "$import_skip" $mraw | python $testimports 2> >(tail -n1) ); then
-            echo
+        if ( import_test $mraw ); then
             python -m $m
         fi
     fi

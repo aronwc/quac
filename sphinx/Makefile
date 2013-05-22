@@ -14,7 +14,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
+.PHONY: help clean html web dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
 all: html
 
@@ -44,9 +44,25 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 
 html:
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	$(SPHINXBUILD) -b html -D html_title="QUAC documentation for commit $$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+	@echo
+	rsync -a --delete --exclude .git $(BUILDDIR)/html/ ../doc
+	touch ../doc/.nojekyll
+	@echo
+	@echo "HTML pages copied to doc/."
+
+# see http://stackoverflow.com/a/2659808/396038
+web: html
+	@echo
+	@echo Making sure there are no uncommitted changes
+	git diff-index --quiet --cached HEAD
+	git diff-files --quiet
+	@echo Publishing new docs
+	cd ../doc && git add --all
+	cd ../doc && git commit -a -m "docs for commit $$(cd .. && git rev-parse --short HEAD)"
+	cd ../doc && git push
 
 dirhtml:
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
@@ -79,17 +95,17 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/Twepi.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/QUAC.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/Twepi.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/QUAC.qhc"
 
 devhelp:
 	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/Twepi"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/Twepi"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/QUAC"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/QUAC"
 	@echo "# devhelp"
 
 epub:

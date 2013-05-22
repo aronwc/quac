@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Twepi documentation build configuration file, created by
+# QUAC documentation build configuration file, created by
 # sphinx-quickstart on Wed Feb 20 12:04:35 2013.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -40,7 +40,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Twepi'
+project = u'QUAC'
 copyright = u'2012-2013, Los Alamos National Security, LLC and others'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -96,14 +96,20 @@ html_theme = 'sphinxdoc'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+#html_theme_options = {'bodyfont': 'serif',  # for agogo
+#                      'pagewidth': '60em',
+#                      'documentwidth': '43em',
+#                      'sidebarwidth': '17em',
+#                      'textalign':'left'}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-html_title = "QUAC documentation"
+#
+# NOTE: This is set using -D in the Makefile to get the git commit hash.
+#html_title = None
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -138,19 +144,19 @@ html_title = "QUAC documentation"
 #html_additional_pages = {}
 
 # If false, no module index is generated.
-#html_domain_indices = True
+html_domain_indices = False
 
 # If false, no index is generated.
-#html_use_index = True
+html_use_index = False
 
 # If true, the index is split into individual pages for each letter.
 #html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+html_show_sourcelink = False
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
-#html_show_sphinx = True
+html_show_sphinx = False
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
 #html_show_copyright = True
@@ -164,7 +170,7 @@ html_title = "QUAC documentation"
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Twepidoc'
+htmlhelp_basename = 'QUACdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -183,8 +189,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Twepi.tex', u'Twepi Documentation',
-   u'Reid Priedhorsky and Aron Culotta', 'manual'),
+  ('index', 'QUAC.tex', u'QUAC Documentation',
+   u'Reid Priedhorsky, Aron Culotta, and others', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -213,8 +219,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'twepi', u'Twepi Documentation',
-     [u'Reid Priedhorsky and Aron Culotta'], 1)
+    ('index', 'QUAC', u'QUAC Documentation',
+     [u'Reid Priedhorsky, Aron Culotta, and others'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -227,8 +233,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Twepi', u'Twepi Documentation',
-   u'Reid Priedhorsky and Aron Culotta', 'Twepi', 'One line description of project.',
+  ('index', 'QUAC', u'QUAC Documentation',
+   u'Reid Priedhorsky, Aron Culotta, and others', 'QUAC', 'One line description of project.',
    'Miscellaneous'),
 ]
 
